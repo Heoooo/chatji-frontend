@@ -9,6 +9,8 @@ function App() {
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [minPrice, setMinPrice] = useState('');
+  const [maxPrice, setMaxPrice] = useState('');
   
   // 🔥 자동완성 및 탭 관련 상태
   const [suggestions, setSuggestions] = useState([]);
@@ -21,6 +23,12 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // 🔥 최근 검색어 상태
+  const [recentSearches, setRecentSearches] = useState(() => {
+    const saved = localStorage.getItem('chatji-recent');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   const observerTarget = useRef(null);
   const API_BASE_URL = "http://localhost:8080"; // 실제 배포시 본인의 Render 주소로 유지!
 
@@ -29,11 +37,19 @@ function App() {
     localStorage.setItem('chatji-wishlist', JSON.stringify(wishlist));
   }, [wishlist]);
 
-  const fetchProducts = async (currentKeyword, currentSort, startIdx) => {
+  // 최근 검색어가 바뀔 때마다 LocalStorage에 저장
+  useEffect(() => {
+    localStorage.setItem('chatji-recent', JSON.stringify(recentSearches));
+  }, [recentSearches]);
+
+  const fetchProducts = async (currentKeyword, currentSort, startIdx, currentMin, currentMax) => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_BASE_URL}/api/products?keyword=${encodeURIComponent(currentKeyword)}&sort=${currentSort}&start=${startIdx}`);
-      if (!res.ok) throw new Error('서버 통신 실패');
+      let url = `${API_BASE_URL}/api/products?keyword=${encodeURIComponent(currentKeyword)}&sort=${currentSort}&start=${startIdx}`;
+      if (currentMin) url += `&minPrice=${currentMin}`;
+      if (currentMax) url += `&maxPrice=${currentMax}`;
+      
+      const res = await fetch(url);
       const data = await res.json();
       if (data.length === 0) setHasMore(false);
       setProducts(prev => startIdx === 1 ? data : [...prev, ...data]);
@@ -45,15 +61,20 @@ function App() {
   };
 
   const handleSearch = (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
     if (!keyword.trim()) return;
+
+    // 최근 검색어 업데이트
+    const updated = [keyword, ...recentSearches.filter(s => s !== keyword)].slice(0, 5);
+    setRecentSearches(updated);
+
     setActiveTab('all'); // 검색 시 전체 목록 탭으로 강제 이동
     setShowSuggestions(false);
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     setProducts([]);
     setPage(1);
     setHasMore(true);
-    fetchProducts(keyword, sort, 1);
+    fetchProducts(keyword, sort, 1, minPrice, maxPrice);
   };
 
   // 찜하기 토글 함수
@@ -104,16 +125,16 @@ function App() {
     const observer = new IntersectionObserver(
       entries => {
         if (entries[0].isIntersecting && !loading && hasMore && products.length > 0 && activeTab === 'all') {
-          const nextStart = page + 20;
+          const nextStart = page + 100;
           setPage(nextStart);
-          fetchProducts(keyword, sort, nextStart);
+          fetchProducts(keyword, sort, nextStart, minPrice, maxPrice);
         }
       },
       { threshold: 1.0 }
     );
     if (observerTarget.current) observer.observe(observerTarget.current);
     return () => observer.disconnect();
-  }, [loading, hasMore, products, page, keyword, sort, activeTab]);
+  }, [loading, hasMore, products, page, keyword, sort, activeTab, minPrice, maxPrice]);
 
   return (
     <div className="container">
@@ -142,12 +163,41 @@ function App() {
               </div>
             )}
           </div>
+          <div className="price-filter">
+            <input
+              type="number"
+              placeholder="최소 금액"
+              value={minPrice}
+              onChange={(e) => setMinPrice(e.target.value)}
+              className="price-input"
+            />
+            <span className="price-separator">~</span>
+            <input
+              type="number"
+              placeholder="최대 금액"
+              value={maxPrice}
+              onChange={(e) => setMaxPrice(e.target.value)}
+              className="price-input"
+            />
+          </div>
         </form>
       )}
 
-      {activeTab === 'all' && products.length > 0 && (
+      {activeTab === 'all' && recentSearches.length > 0 && (
+        <div className="recent-searches">
+          <span className="recent-label">최근 검색어:</span>
+          {recentSearches.map((s, idx) => (
+            <button key={idx} className="recent-tag" onClick={() => { setKeyword(s); setProducts([]); setPage(1); fetchProducts(s, sort, 1, minPrice, maxPrice); }}>
+              {s}
+            </button>
+          ))}
+          <button className="recent-clear" onClick={() => setRecentSearches([])}>초기화</button>
+        </div>
+      )}
+
+      {activeTab === 'all' && (
         <div className="filter-container">
-          <select value={sort} onChange={(e) => { setSort(e.target.value); setProducts([]); setPage(1); fetchProducts(keyword, e.target.value, 1); }} className="sort-select">
+          <select value={sort} onChange={(e) => { setSort(e.target.value); setProducts([]); setPage(1); fetchProducts(keyword, e.target.value, 1, minPrice, maxPrice); }} className="sort-select">
             <option value="sim">정확도순</option>
             <option value="price_asc">가격 낮은순</option>
             <option value="price_dsc">가격 높은순</option>
@@ -156,8 +206,8 @@ function App() {
       )}
 
       <main className="product-grid">
-        {/* 현재 탭에 맞는 리스트 렌더링 */}
-        {(activeTab === 'all' ? products : wishlist).map((product, idx) => (
+        {/* 현재 탭에 맞는 리스트 렌더링 (안전한 배열 체크 추가) */}
+        {(Array.isArray(activeTab === 'all' ? products : wishlist) ? (activeTab === 'all' ? products : wishlist) : []).map((product, idx) => (
           <div key={`${product.productId}-${idx}`} className="product-card-wrapper">
             <a href={product.link} target="_blank" rel="noreferrer" className="product-card">
               <div className="image-container">

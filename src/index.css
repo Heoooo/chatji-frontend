@@ -450,3 +450,101 @@ body {
   padding: 4rem 1rem;
   font-size: 1.1rem;
 }
+
+/* 가격 필터링 박스 */
+.price-filter {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1.5rem;
+  animation: fadeIn 0.5s ease-out;
+}
+
+.price-input {
+  width: 140px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  color: white;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.3s;
+}
+
+.price-input:focus {
+  border-color: var(--accent-color);
+  background: rgba(15, 23, 42, 0.9);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
+.price-separator {
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+/* Chrome, Safari, Edge, Opera 에서 input number 화살표 제거 */
+.price-input::-webkit-outer-spin-button,
+.price-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox 에서 화살표 제거 */
+.price-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* 최근 검색어 섹션 */
+.recent-searches {
+  width: 100%;
+  max-width: 700px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  align-items: center;
+  margin-top: -3rem; /* 검색창 바로 아래 붙임 */
+  margin-bottom: 3rem;
+  animation: fadeIn 0.8s ease-out 0.4s both;
+}
+
+.recent-label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.recent-tag {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-main);
+  padding: 0.4rem 1rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recent-tag:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+}
+
+.recent-clear {
+  background: transparent;
+  border: none;
+  color: #ef4444;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.4rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.recent-clear:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
