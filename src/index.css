@@ -304,3 +304,77 @@ body {
   .logo { font-size: 3rem; }
   .search-button { padding: 0 1.5rem; }
 }
+
+.suggestion-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 110px; /* 검색 버튼 너비 고려 */
+  background: #0f172a;
+  border: 1px solid #38bdf8; /* 테두리를 조금 더 선명하게 */
+  border-radius: 0 0 16px 16px;
+  padding: 0.5rem 0;
+  z-index: 10000 !important; /* 최상위 우선순위 */
+  text-align: left;
+  box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.9); 
+  margin-top: 2px;
+}
+
+.suggestion-item {
+  padding: 1.1rem 1.5rem;
+  cursor: pointer;
+  color: #f1f5f9;
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  background: #0f172a; /* 항목도 불투명하게 */
+}
+
+.suggestion-item:hover {
+  background: #1e293b; /* 호버 시에만 살짝 밝게 */
+  color: #38bdf8;
+}
+
+/* 🚨 검색창 부모 요소가 아래 상품들을 덮을 수 있게 설정 */
+.search-form {
+  position: relative;
+  z-index: 1001;
+}
+
+
+/* 추천 항목 스타일 보강 */
+.suggestion-item {
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  color: #f1f5f9;
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background: rgba(56, 189, 248, 0.2);
+  padding-left: 2rem; /* 호버 시 살짝 오른쪽으로 밀리는 효과 */
+}
+
+/* 상품 그리드의 우선순위를 낮춤 */
+.product-grid {
+  position: relative;
+  z-index: 10;
+}
+
+
+.suggestion-item {
+  padding: 0.9rem 1.5rem;
+  cursor: pointer;
+  color: #e2e8f0;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+}
+
+.suggestion-item:hover {
+  background: rgba(56, 189, 248, 0.15);
+  color: #fff;
+}

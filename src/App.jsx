@@ -10,34 +10,20 @@ function App() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   
-  // 🔥 자동완성용 상태 변수들
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  
   const observerTarget = useRef(null);
 
-  // 인기 검색어 박스용 데이터
-  const popularKeywords = ['아이폰 15', '맥북 프로', '나이키 에어포스'];
-
-  // 🔥 자동완성(추천검색어) 사전 가짜 데이터 (여기에 무한정 단어 추가 가능!)
-  const allSuggestions = [
-    "아이폰 15", "아이폰 15 프로", "아이폰 14", "아이폰 13 미니", "아이폰 12", "아이폰 케이스",
-    "맥북 프로 14인치", "맥북 에어 M3", "맥북 에어 M2", "맥북 거치대",
-    "나이키 에어포스 1", "나이키 V2K 런", "나이키 에어맥스", "나이키 덩크로우",
-    "다이슨 에어랩", "다이슨 청소기", "다이슨 슈퍼소닉",
-    "에어팟 맥스", "에어팟 프로 2세대", "에어팟 3세대",
-    "갤럭시 S24 울트라", "갤럭시 S23", "갤럭시 워치 6", "갤럭시 버즈 2 프로"
-  ];
+  // 1. 배포 후 Render 주소가 나오면 여기에 넣어주세요! (지금은 로컬)
+  const API_BASE_URL = "http://localhost:8080"; 
 
   const fetchProducts = async (currentKeyword, currentSort, startIdx) => {
     try {
       setLoading(true);
-      const res = await fetch(`http://localhost:8080/api/products?keyword=${encodeURIComponent(currentKeyword)}&sort=${currentSort}&start=${startIdx}`);
+      const res = await fetch(`${API_BASE_URL}/api/products?keyword=${encodeURIComponent(currentKeyword)}&sort=${currentSort}&start=${startIdx}`);
       if (!res.ok) throw new Error('서버 통신 실패');
-      
       const data = await res.json();
       if (data.length === 0) setHasMore(false);
-      
       setProducts(prev => startIdx === 1 ? data : [...prev, ...data]);
     } catch (err) {
       setError(err.message);
@@ -46,15 +32,57 @@ function App() {
     }
   };
 
+  // 🔥 2. 구글 실시간 추천 검색어 API 호출 (더미 데이터 삭제!)
+  const handleInputChange = async (e) => {
+    const val = e.target.value;
+    setKeyword(val);
+    if (!val.trim()) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+        try {
+      const res = await fetch(`${API_BASE_URL}/api/products/suggestions?q=${encodeURIComponent(val)}`);
+      const data = await res.json();
+      
+      let list = [];
+      if (Array.isArray(data)) {
+        // 구글 형식 [ "단어", ["추천1", "추천2"] ]
+        list = data[1] || [];
+      } else if (data.items && data.items[0]) {
+        // 네이버 형식 { items: [ [ ["단어", "1"] ] ] }
+        list = data.items[0].map(item => Array.isArray(item) ? item[0] : item);
+      }
+      
+      setSuggestions(list.filter(s => typeof s === 'string').slice(0, 8));
+      setShowSuggestions(list.length > 0);
+    } catch (err) {
+      console.error("추천 검색어 로딩 실패", err);
+    }
+
+
+
+  };
+
+
   const handleSearch = (e) => {
     e.preventDefault();
     if (!keyword.trim()) return;
-    setShowSuggestions(false);
+
+    setSuggestions([]); 
+    setShowSuggestions(false); 
+
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
+
     setProducts([]);
     setPage(1);
     setHasMore(true);
     fetchProducts(keyword, sort, 1);
   };
+
 
   const clickKeyword = (kw) => {
     setKeyword(kw);
@@ -62,7 +90,7 @@ function App() {
     setProducts([]);
     setPage(1);
     setHasMore(true);
-    fetchProducts(kw, sort, 1); 
+    fetchProducts(kw, sort, 1);
   };
 
   const handleSortChange = (e) => {
@@ -72,21 +100,6 @@ function App() {
     setPage(1);
     setHasMore(true);
     fetchProducts(keyword, newSort, 1);
-  };
-
-  // 🔥 타이핑할 때마다 검색어 사전을 뒤져서 자동완성 띄워주기
-  const handleInputChange = (e) => {
-    const val = e.target.value;
-    setKeyword(val);
-    if (!val.trim()) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-    // 치고 있는 단어가 포함된 추천검색어 5개 추출
-    const filtered = allSuggestions.filter(s => s.toLowerCase().includes(val.toLowerCase())).slice(0, 5);
-    setSuggestions(filtered);
-    setShowSuggestions(filtered.length > 0);
   };
 
   useEffect(() => {
@@ -111,42 +124,29 @@ function App() {
       </header>
 
       <form className="search-form" onSubmit={handleSearch}>
-        {/* 검색창 박스를 position: relative로 두어 드롭다운의 기준점을 만듦 */}
-        <div className="search-bar" style={{ position: "relative" }}>
+        <div className="search-bar" style={{ position: "relative" , zIndex: 1000}}>
           <input 
             type="text" 
-            placeholder="예: 맥북 M3" 
+            placeholder="어떤 상품을 찾으시나요?" 
             value={keyword} 
             onChange={handleInputChange} 
-            onFocus={() => { if(suggestions.length > 0) setShowSuggestions(true); }}
-            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // 클릭 씹힘 방지 딜레이
+            onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             className="search-input" 
           />
           <button type="submit" className="search-button" disabled={loading}>검색</button>
 
-          {/* 🔥 자동완성 드롭다운 UI */}
           {showSuggestions && (
-            <div style={{
-              position: "absolute", top: "115%", left: "1rem", right: "120px",
-              background: "rgba(15, 23, 42, 0.95)", backdropFilter: "blur(12px)",
-              border: "1px solid rgba(56, 189, 248, 0.3)", borderRadius: "12px",
-              padding: "0.5rem 0", zIndex: 10, textAlign: "left",
-              boxShadow: "0 15px 35px rgba(0,0,0,0.6)", overflow: "hidden"
-            }}>
+            <div className="suggestion-dropdown">
               {suggestions.map((s, idx) => (
-                <div 
-                  key={idx} 
-                  onClick={() => clickKeyword(s)}
-                  style={{ 
-                    padding: "0.8rem 1.5rem", cursor: "pointer", 
-                    color: "#f8fafc", transition: "background 0.2s" 
-                  }}
-                  onMouseOver={(e) => e.target.style.background = "rgba(56, 189, 248, 0.15)"}
-                  onMouseOut={(e) => e.target.style.background = "transparent"}
-                >
-                  🔍 {s.split(new RegExp(`(${keyword})`, 'gi')).map((part, i) => 
-                    part.toLowerCase() === keyword.toLowerCase() ? <strong key={i} style={{color: "#38bdf8"}}>{part}</strong> : part
-                  )}
+                <div key={idx} onClick={() => clickKeyword(s)} className="suggestion-item">
+                  {s.toLowerCase().includes(keyword.toLowerCase()) ? (
+                    <>
+                      {s.split(new RegExp(`(${keyword})`, 'gi')).map((part, i) => 
+                        part.toLowerCase() === keyword.toLowerCase() ? <strong key={i} style={{color: "#38bdf8"}}>{part}</strong> : part
+                      )}
+                    </>
+                  ) : s}
                 </div>
               ))}
             </div>
@@ -154,18 +154,7 @@ function App() {
         </div>
       </form>
 
-      {products.length === 0 && !loading && !error && (
-        <div style={{ textAlign: "center", marginBottom: "3rem", marginTop: "-2rem", animation: "fadeIn 0.5s ease-out" }}>
-          <p style={{ color: "#94a3b8", fontSize: "0.95rem", marginBottom: "1rem" }}>🔥 지금 쇼핑 핫 트렌드</p>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.8rem", justifyContent: "center" }}>
-            {popularKeywords.map((kw, idx) => (
-               <button key={idx} onClick={() => clickKeyword(kw)} type="button" style={{ background: "rgba(56, 189, 248, 0.1)", border: "1px solid rgba(56, 189, 248, 0.2)", color: "#38bdf8", padding: "0.5rem 1.2rem", borderRadius: "999px", cursor: "pointer", fontWeight: "600", transition: "transform 0.2s" }} onMouseOver={(e) => e.target.style.transform = "scale(1.05)"} onMouseOut={(e) => e.target.style.transform = "scale(1)"}>{kw}</button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {error && <div className="error-message">{error}</div>}
+      {/* 인기 검색어 생략 가능 - 필요하시면 유지 */}
 
       {products.length > 0 && (
         <div className="filter-container">
@@ -192,8 +181,8 @@ function App() {
         ))}
       </main>
 
-      {loading && products.length > 0 && <div className="loader" style={{margin: "2rem auto"}}></div>}
       <div ref={observerTarget} style={{ height: '20px' }}></div>
+      {loading && <div className="loader" style={{margin: "2rem auto"}}></div>}
     </div>
   );
 }
