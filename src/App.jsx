@@ -14,8 +14,7 @@ function App() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const observerTarget = useRef(null);
 
-  // 1. 배포 후 Render 주소가 나오면 여기에 넣어주세요! (지금은 로컬)
-  const API_BASE_URL = "http://localhost:8080"; 
+  const API_BASE_URL = "https://chatji-backend.onrender.com"; 
 
   const fetchProducts = async (currentKeyword, currentSort, startIdx) => {
     try {
@@ -32,7 +31,7 @@ function App() {
     }
   };
 
-  // 🔥 2. 구글 실시간 추천 검색어 API 호출 (더미 데이터 삭제!)
+  // 2. 구글 실시간 추천 검색어 API 호출 (더미 데이터 삭제!)
   const handleInputChange = async (e) => {
     const val = e.target.value;
     setKeyword(val);
