@@ -30,7 +30,7 @@ function App() {
   });
 
   const observerTarget = useRef(null);
-  const API_BASE_URL = "http://localhost:8080"; // 실제 배포시 본인의 Render 주소로 유지!
+  const API_BASE_URL = "https://chatji-backend.onrender.com"; // 실제 배포 주소로 업데이트 완료!
 
   // 찜 목록이 바뀔 때마다 LocalStorage에 저장
   useEffect(() => {
