@@ -29,8 +29,32 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // 🔥 핫딜 상태
+  const [hotDeals, setHotDeals] = useState([]);
+  const [fetchingHotDeals, setFetchingHotDeals] = useState(false);
+
   const observerTarget = useRef(null);
   const API_BASE_URL = "https://chatji-backend.onrender.com"; // 실서버 주소로 최종 반영!
+  // const API_BASE_URL = "http://localhost:8080"; // 개발용 로컬 주소 (필요 시 변경)
+
+  // 핫딜 데이터 가져오기
+  const fetchHotDeals = async () => {
+    try {
+      setFetchingHotDeals(true);
+      const res = await fetch(`${API_BASE_URL}/api/hotdeals`);
+      const data = await res.json();
+      setHotDeals(data);
+    } catch (err) {
+      console.error("HotDeal Fetch Error:", err);
+    } finally {
+      setFetchingHotDeals(false);
+    }
+  };
+
+  // 초기 로딩 시 핫딜 가져오기
+  useEffect(() => {
+    fetchHotDeals();
+  }, []);
 
   // 찜 목록이 바뀔 때마다 LocalStorage에 저장
   useEffect(() => {
@@ -142,7 +166,7 @@ function App() {
         <h1 className="logo"><span className="gradient-text">Chat</span>ji</h1>
       </header>
 
-      {/* 탭 메뉴 추가 */}
+      {/* 탭 메뉴 */}
       <div className="tabs">
         <button className={activeTab === 'all' ? 'tab-btn active' : 'tab-btn'} onClick={() => handleTabChange('all')}>검색</button>
         <button className={activeTab === 'wishlist' ? 'tab-btn active' : 'tab-btn'} onClick={() => handleTabChange('wishlist')}>찜 목록 ({wishlist.length})</button>
@@ -179,10 +203,18 @@ function App() {
               onChange={(e) => setMaxPrice(e.target.value)}
               className="price-input"
             />
+
+            {/* 정렬 셀렉트 박스 (이사 완료!) */}
+            <select value={sort} onChange={(e) => { setSort(e.target.value); setProducts([]); setPage(1); fetchProducts(keyword, e.target.value, 1, minPrice, maxPrice); }} className="sort-select">
+              <option value="sim">정확도순</option>
+              <option value="price_asc">가격 낮은순</option>
+              <option value="price_dsc">가격 높은순</option>
+            </select>
           </div>
         </form>
       )}
 
+      {/* 🏷️ 최근 검색어 (가격 필터 바로 아래로!) */}
       {activeTab === 'all' && recentSearches.length > 0 && (
         <div className="recent-searches">
           <span className="recent-label">최근 검색어:</span>
@@ -195,15 +227,28 @@ function App() {
         </div>
       )}
 
-      {activeTab === 'all' && (
-        <div className="filter-container">
-          <select value={sort} onChange={(e) => { setSort(e.target.value); setProducts([]); setPage(1); fetchProducts(keyword, e.target.value, 1, minPrice, maxPrice); }} className="sort-select">
-            <option value="sim">정확도순</option>
-            <option value="price_asc">가격 낮은순</option>
-            <option value="price_dsc">가격 높은순</option>
-          </select>
-        </div>
+      {/* 🔥 실시간 고검증 핫딜 섹션 (검색 결과가 없을 때만 노출!) */}
+      {activeTab === 'all' && hotDeals.length > 0 && products.length === 0 && (
+        <section className="hot-deals-section" style={{ marginTop: recentSearches.length > 0 ? "0" : "2rem" }}>
+          <div className="section-header">
+            <h2 className="section-title">🔥 실시간 고검증 핫딜</h2>
+            <p className="section-subtitle">네이버 최저가 대비 <span className="highlight">10% 이상</span> 저렴한 상품만 엄선!</p>
+          </div>
+          <div className="hot-deals-scroll">
+            {hotDeals.map((deal) => (
+              <a key={deal.id} href={deal.url} target="_blank" rel="noreferrer" className="hot-deal-card">
+                <div className="hot-badge">SUPER DEAL</div>
+                <h4 className="hot-title">{deal.title}</h4>
+                <div className="hot-footer">
+                  <span className="hot-source">{deal.source}</span>
+                  <span className="hot-price">{deal.currentPrice?.toLocaleString()}원~</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        </section>
       )}
+
 
       <main className="product-grid">
         {/* 현재 탭에 맞는 리스트 렌더링 (안전한 배열 체크 추가) */}
