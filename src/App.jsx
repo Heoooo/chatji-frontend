@@ -35,8 +35,8 @@ function App() {
   const hotDealsRef = useRef(null); // 스크롤 제어를 위한 Ref
 
   const observerTarget = useRef(null);
-  // const API_BASE_URL = "https://chatji-backend.onrender.com"; // 실서버 주소로 최종 반영!
-  const API_BASE_URL = "http://localhost:8080"; // 개발용 로컬 주소 (필요 시 변경)
+  const API_BASE_URL = "https://chatji-backend.onrender.com"; // 실서버 주소로 최종 반영!
+  // const API_BASE_URL = "http://localhost:8080"; // 개발용 로컬 주소 (필요 시 변경)
 
   // 핫딜 좌우 스크롤 함수
   const scrollHotDeals = (direction) => {
@@ -252,15 +252,35 @@ function App() {
           <div className="section-header">
             <h2 className="section-title">🔥 실시간 고검증 핫딜</h2>
             <p className="section-subtitle">네이버 최저가 대비 <span className="highlight">10% 이상</span> 저렴한 상품만 엄선!</p>
+            
+            {/* v27: 훨씬 더 눈에 띄는 점수 산출 안내 배너 */}
+            <div className="score-info-banner">
+              <span className="info-icon">💡</span>
+              <div className="info-content">
+                <strong>Smart Score 안내:</strong> 실시간 할인율(70%)과 네이버 시세 대조(30%)를 통해 산출된 
+                <b> Chatji만의 독자적인 가성비 지수</b>입니다. 점수가 높을수록 손해 없는 '역대급 딜'을 의미합니다.
+              </div>
+            </div>
           </div>
           <div className="hot-deals-container" style={{ position: 'relative' }}>
             {/* 좌우 버튼 추가 */}
             <button className="scroll-btn left" onClick={() => scrollHotDeals('left')}>‹</button>
             <div className="hot-deals-scroll" ref={hotDealsRef}>
               {hotDeals.map((deal) => (
-                <a key={deal.id} href={deal.url} target="_blank" rel="noreferrer" className="hot-deal-card">
-                  <div className="hot-badge">SUPER DEAL</div>
+                <a key={deal.id} href={deal.url} target="_blank" rel="noreferrer" className={`hot-deal-card ${deal.score >= 90 ? 'top-tier' : ''}`}>
+                  <div className="hot-badge">
+                    {deal.score >= 90 ? '🔥 HOT SCORE ' + deal.score : 'SUPER DEAL'}
+                  </div>
                   <h4 className="hot-title">{deal.title}</h4>
+                  
+                  {/* v27: 점수 게이지 바 추가 */}
+                  <div className="score-container">
+                    <div className="score-label">Score: {deal.score || 50}</div>
+                    <div className="score-bar-bg">
+                      <div className="score-bar-fill" style={{ width: `${deal.score || 50}%` }}></div>
+                    </div>
+                  </div>
+
                   <div className="hot-footer">
                     <span className="hot-source">{deal.source}</span>
                     <span className="hot-price">{deal.currentPrice?.toLocaleString()}원~</span>
