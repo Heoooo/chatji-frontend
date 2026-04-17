@@ -675,3 +675,52 @@ body {
   color: #ff6b00;
   font-family: 'Outfit', sans-serif;
 }
+
+/* --- 핫딜 컨테이너 및 좌우 버튼 (v26) --- */
+.hot-deals-container {
+  position: relative;
+  width: 100%;
+}
+
+.scroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+  font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  user-select: none;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.scroll-btn:hover {
+  background: #ff6b00;
+  border-color: #ff6b00;
+  transform: translateY(-50%) scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 107, 0, 0.5);
+}
+
+.scroll-btn.left {
+  left: -22px;
+}
+
+.scroll-btn.right {
+  right: -22px;
+}
+
+@media (max-width: 768px) {
+  .scroll-btn {
+    display: none; /* 모바일은 스와이프 권장 */
+  }
+}

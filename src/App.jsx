@@ -32,10 +32,22 @@ function App() {
   // 🔥 핫딜 상태
   const [hotDeals, setHotDeals] = useState([]);
   const [fetchingHotDeals, setFetchingHotDeals] = useState(false);
+  const hotDealsRef = useRef(null); // 스크롤 제어를 위한 Ref
 
   const observerTarget = useRef(null);
-  const API_BASE_URL = "https://chatji-backend.onrender.com"; // 실서버 주소로 최종 반영!
-  // const API_BASE_URL = "http://localhost:8080"; // 개발용 로컬 주소 (필요 시 변경)
+  // const API_BASE_URL = "https://chatji-backend.onrender.com"; // 실서버 주소로 최종 반영!
+  const API_BASE_URL = "http://localhost:8080"; // 개발용 로컬 주소 (필요 시 변경)
+
+  // 핫딜 좌우 스크롤 함수
+  const scrollHotDeals = (direction) => {
+    if (hotDealsRef.current) {
+      const scrollAmount = 300;
+      hotDealsRef.current.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   // 핫딜 데이터 가져오기
   const fetchHotDeals = async () => {
@@ -51,9 +63,16 @@ function App() {
     }
   };
 
-  // 초기 로딩 시 핫딜 가져오기
+  // 초기 로딩 시 및 30초마다 핫딜 자동으로 가져오기 (실시간성 확보)
   useEffect(() => {
     fetchHotDeals();
+    
+    // 30초마다 백엔드에 새로운 핫딜이 있는지 확인
+    const intervalId = setInterval(() => {
+      fetchHotDeals();
+    }, 30000); // 30,000ms = 30초
+
+    return () => clearInterval(intervalId); // 컴포넌트 언마운트 시 정리
   }, []);
 
   // 찜 목록이 바뀔 때마다 LocalStorage에 저장
@@ -234,17 +253,22 @@ function App() {
             <h2 className="section-title">🔥 실시간 고검증 핫딜</h2>
             <p className="section-subtitle">네이버 최저가 대비 <span className="highlight">10% 이상</span> 저렴한 상품만 엄선!</p>
           </div>
-          <div className="hot-deals-scroll">
-            {hotDeals.map((deal) => (
-              <a key={deal.id} href={deal.url} target="_blank" rel="noreferrer" className="hot-deal-card">
-                <div className="hot-badge">SUPER DEAL</div>
-                <h4 className="hot-title">{deal.title}</h4>
-                <div className="hot-footer">
-                  <span className="hot-source">{deal.source}</span>
-                  <span className="hot-price">{deal.currentPrice?.toLocaleString()}원~</span>
-                </div>
-              </a>
-            ))}
+          <div className="hot-deals-container" style={{ position: 'relative' }}>
+            {/* 좌우 버튼 추가 */}
+            <button className="scroll-btn left" onClick={() => scrollHotDeals('left')}>‹</button>
+            <div className="hot-deals-scroll" ref={hotDealsRef}>
+              {hotDeals.map((deal) => (
+                <a key={deal.id} href={deal.url} target="_blank" rel="noreferrer" className="hot-deal-card">
+                  <div className="hot-badge">SUPER DEAL</div>
+                  <h4 className="hot-title">{deal.title}</h4>
+                  <div className="hot-footer">
+                    <span className="hot-source">{deal.source}</span>
+                    <span className="hot-price">{deal.currentPrice?.toLocaleString()}원~</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+            <button className="scroll-btn right" onClick={() => scrollHotDeals('right')}>›</button>
           </div>
         </section>
       )}
