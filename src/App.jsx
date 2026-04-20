@@ -22,11 +22,51 @@ function App() {
   const [showModal, setShowModal] = useState(false);
 
   const [hotDeals, setHotDeals] = useState([]);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(
+    localStorage.getItem('chatji_notif_enabled') !== 'false'
+  );
   const hotDealsRef = useRef(null);
   const recoRef = useRef(null);
   const observerTarget = useRef(null);
 
-  const API_BASE_URL = "https://chatji-backend.onrender.com";
+  // const API_BASE_URL = "https://chatji-backend.onrender.com";
+  const API_BASE_URL = "http://localhost:8080";
+
+  // v29: 실시간 데스크탑 알림 설정
+  useEffect(() => {
+    if (Notification.permission === 'default' && notificationsEnabled) {
+      Notification.requestPermission();
+    }
+
+    const eventSource = new EventSource(`${API_BASE_URL}/api/notifications/stream`);
+
+    eventSource.addEventListener('hotdeal', (event) => {
+      const deal = JSON.parse(event.data);
+      
+      // 알림이 켜져 있을 때만 팝업 띄우기
+      if (Notification.permission === 'granted' && notificationsEnabled) {
+        const notification = new Notification('🔥 역대급 핫딜 포착!', {
+          body: `[${deal.source}] ${deal.title}\n가격: ${deal.currentPrice?.toLocaleString()}원`,
+        });
+        notification.onclick = () => {
+          window.focus();
+          window.open(deal.url, '_blank');
+        };
+      }
+      fetchHotDeals();
+    });
+
+    return () => eventSource.close();
+  }, [notificationsEnabled]); // 설정 바뀔 때마다 재설정
+
+  const toggleNotifications = () => {
+    const newState = !notificationsEnabled;
+    setNotificationsEnabled(newState);
+    localStorage.setItem('chatji_notif_enabled', newState);
+    if (newState && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  };
 
   useEffect(() => {
     let storedId = localStorage.getItem('chatji_user_id');
@@ -147,7 +187,19 @@ function App() {
   return (
     <div className="container">
       <header className="header">
-        <h1 className="logo" onClick={goHome} style={{ cursor: 'pointer' }}>Chatji</h1>
+        <div className="header-left">
+          <h1 className="logo" onClick={goHome} style={{ cursor: 'pointer' }}>Chatji</h1>
+          <button 
+            className={`notif-toggle-btn ${notificationsEnabled ? 'on' : 'off'}`} 
+            onClick={toggleNotifications}
+          >
+            {notificationsEnabled ? (
+              <><span className="notif-icon">🔔</span><span className="notif-text">알림 ON</span></>
+            ) : (
+              <><span className="notif-icon">🔕</span><span className="notif-text">알림 OFF</span></>
+            )}
+          </button>
+        </div>
       </header>
 
       <div className="tabs">
@@ -188,18 +240,6 @@ function App() {
                 <a key={deal.id} href={deal.url} target="_blank" rel="noreferrer" className="hot-deal-card reco" onClick={() => handleAction(deal.category)}>
                   <div className="hot-badge reco-badge">BEST PICK</div>
                   <h4 className="hot-title">{deal.title}</h4>
-                  
-                  {/* v28: 게이지 바 위에 점수 수치 배치 */}
-                  <div className="score-container">
-                    <div className="score-label">
-                      <span>Smart Score</span>
-                      <span className="score-num">{deal.score || 50}</span>
-                    </div>
-                    <div className="score-bar-bg">
-                      <div className="score-bar-fill" style={{ width: `${deal.score || 50}%` }}></div>
-                    </div>
-                  </div>
-
                   <div className="hot-footer">
                     <span className="hot-source">{deal.source}</span>
                     <span className="hot-price">{deal.currentPrice?.toLocaleString()}원~</span>
